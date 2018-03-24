@@ -30,9 +30,4 @@ router.get('/', authenticate, (req,res) => {
   res.json({ currentUser });
 })
 
-router.get('/test', (req,res) => {
-
-  res.json({ test: 'test' });
-})
-
 module.exports = router;
