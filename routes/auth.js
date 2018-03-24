@@ -8,6 +8,8 @@ const AuthenticateUser = require('../utils/authenticateUser');
 const ConfirmUser = require('../utils/confirmUser');
 const { sendConfirmationEmail, sendResetPasswordEmail } = require('../utils/mailer');
 const authenticate = require('../middlewares/authenticate');
+const User = require('../models/User');
+
 var router = express.Router();
 
 router.post('/',
@@ -36,6 +38,8 @@ router.post('/confirmation',
       ConfirmUser(confirmationToken)
         .then(() => res.json({ status: 'Email zatwierdzony' }))
         .catch(errors => res.status(403).json({ errors }))
+    } else {
+        res.status(403).json({ errors: errors.mapped() });
     }
 })
 
@@ -59,43 +63,59 @@ router.post('/sendConfirmationEmail', authenticate, (req, res) => {
   })
 })
 
-router.post('/resetPasswordRequest', (req, res) => {
-  const { email } = req.body;
-  return User.query({
-      where: { email }
-  }).fetch().then(user => {
-      if(user) {
-          const resetPasswordToken = generateResetPasswordJWT(user);
-          
-          user.set('resetPasswordToken', resetPasswordToken);
+router.post('/resetPasswordRequest',
+    [body('email', 'Podaj adres email').isEmail()],
+    (req, res) => {
+        const { email } = req.body;
+        const errors = validationResult(req);
 
-          sendResetPasswordEmail(user);
+        if(errors.isEmpty()) {
+            return User.query({
+                where: { email }
+            }).fetch().then(user => {
+                if(user) {
+                    const resetPasswordToken = generateResetPasswordJWT(user);
+                    
+                    user.set('resetPasswordToken', resetPasswordToken);
 
-          return res.json({ });
-      } else return res.status(400).json({ errors: { global: 'Adres email nie istnieje' } });
-  })
+                    sendResetPasswordEmail(user);
+
+                    return res.json({ status: "Email został wysłany" });
+                } else return res.status(400).json({ errors: { global: 'Adres email nie istnieje' } });
+            })
+        } else {
+            res.status(403).json({ errors: errors.mapped() });
+        }
 })
 
-router.post('/resetPassword', (req ,res) => {
-  const { password, token } = req.body;
-  
-  jwt.verify(token, process.env.JWT_SECRET, (err,decoded) => {
-      if(err) {
-          res.status(401).json({ errors: { global: "Sesja wygasła" }})
-      } else {
-          return User.query({
-              where: { email: decoded.email}
-          }).fetch().then(user => {
-              if(user) {
-                  const password_digest = bcrypt.hashSync(password,10);
+router.post('/resetPassword',
+    [body('token', 'Brak tokenu').exists(),
+    body('password', 'Brak nowego hasła').exists()],
+    (req ,res) => {
+        const { password, token } = req.body;
+        const errors = validationResult(req);
 
-                  user.set('password_digest', password_digest);
-                  return user.save().then(() => res.json({ }));
+        if(errors.isEmpty()) {
+            jwt.verify(token, process.env.JWT_SECRET, (err,decoded) => {
+                if(err) {
+                    res.status(401).json({ errors: { global: "Zły token bądź sesja wygasła" }})
+                } else {
+                    return User.query({
+                        where: { email: decoded.email}
+                    }).fetch().then(user => {
+                        if(user) {
+                            const password_digest = bcrypt.hashSync(password,10);
 
-              } else return res.status(403).json({ errors: { global: 'Użytkownik nie istnieje' } });
-          })
-      }
-  });
+                            user.set('password_digest', password_digest);
+                            return user.save().then(() => res.json({ status: "Poprawnie zmieniono hasło"}));
+
+                        } else return res.status(403).json({ errors: { global: 'Użytkownik nie istnieje' } });
+                    })
+                }
+            });
+        } else {
+            res.status(403).json({ errors: errors.mapped() });
+        }
 })
 
 module.exports = router;

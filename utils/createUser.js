@@ -26,7 +26,6 @@ module.exports = (email, password) => {
                 var errrors = {};
                 if(err.constraint === 'users_email_unique') errors = { global: "Istnieje już użytkownik o takim adresie email" };
                 else errors = err;
-                console.log(err);
                 reject(errors);
             })
         })

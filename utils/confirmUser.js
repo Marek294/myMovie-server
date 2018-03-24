@@ -12,7 +12,7 @@ module.exports = (confirmationToken) => {
                 
                 return resolve();
             } else {
-                const errors = { global: 'Użytkownik już zatwierdził email' }
+                const errors = { global: 'Nieprawidłowy token bądź użytkownik już zatwierdził email' }
                 return reject(errors);
             }
         })
