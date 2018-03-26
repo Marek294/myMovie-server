@@ -21,7 +21,7 @@ router.post('/',
 
     if (errors.isEmpty()) {
       AuthenticateUser(email,password)
-        .then(token => res.json({ token }))
+        .then(user => res.json(user))
         .catch(errors => res.status(401).json({ errors }))
     } else {
       res.status(403).json({ errors: errors.mapped() });

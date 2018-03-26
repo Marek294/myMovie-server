@@ -11,7 +11,11 @@ module.exports = (email, password) => {
             if (user && bcrypt.compareSync(password, user.get('password_digest'))) {
                 const token = generateJWT(user);
 
-                return resolve(token);
+                return resolve({ 
+                    email: user.get('email'),
+                    confirmed: user.get('confirmed'),
+                    avatar: user.get('avatar'),
+                    token });
             } else {
                 const errors = { global: 'Nieprawidłowy adres email lub hasło' }
                 return reject(errors);
