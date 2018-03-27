@@ -13,8 +13,8 @@ const User = require('../models/User');
 var router = express.Router();
 
 router.post('/',
-  [body('email', 'Podaj adres email').isEmail(),
-  body('password', 'Podaj hasło').exists()],
+  [ body('email', 'Podaj adres email').isEmail(),
+    body('password', 'Podaj hasło').exists(),],
   (req, res, next) => {
     const { email, password } = req.body;
     const errors = validationResult(req);

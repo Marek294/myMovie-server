@@ -20,7 +20,11 @@ module.exports = (email, password) => {
 
                 sendConfirmationEmail(user);
 
-                return resolve(token);
+                return resolve({ 
+                    email: user.get('email'),
+                    confirmed: user.get('confirmed'),
+                    avatar: user.get('avatar'),
+                    token });
             })
             .catch(err => {
                 var errrors = {};
