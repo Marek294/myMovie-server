@@ -10,6 +10,8 @@ const { sendConfirmationEmail, sendResetPasswordEmail } = require('../utils/mail
 const authenticate = require('../middlewares/authenticate');
 const User = require('../models/User');
 
+const passwordLength = 5;
+
 var router = express.Router();
 
 router.post('/',
@@ -37,7 +39,10 @@ router.post('/confirmation',
     if(errors.isEmpty()) {
       ConfirmUser(confirmationToken)
         .then(() => res.json({ status: 'Email zatwierdzony' }))
-        .catch(errors => res.status(403).json({ errors }))
+        .catch(errors => {
+            console.log(errors);
+            res.status(403).json({ errors })
+        })
     } else {
         res.status(403).json({ errors: errors.mapped() });
     }
@@ -90,7 +95,8 @@ router.post('/resetPasswordRequest',
 
 router.post('/resetPassword',
     [body('token', 'Brak tokenu').exists(),
-    body('password', 'Brak nowego hasła').exists()],
+    body('password', 'Hasło musi składać się z conajmniej ' + passwordLength + ' znaków').isLength({ min: passwordLength }),
+    body('confirmPassword', 'Hasła muszą być takie same').custom((value, { req }) => value === req.body.password)],
     (req ,res) => {
         const { password, token } = req.body;
         const errors = validationResult(req);
